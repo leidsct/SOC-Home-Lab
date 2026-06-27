@@ -136,7 +136,7 @@ sudo systemctl status wazuh-manager
 ### Access Wazuh Dashboard
 - URL: `https://10.0.2.4`
 - Default user: `admin`
-- Password: (generated during install — save this!)
+- Password: *(generated during install — save this!)*
 
 ### Enable Log Archiving
 Edit Wazuh manager config:
@@ -164,14 +164,9 @@ sudo systemctl restart wazuh-manager
 ### Install Sysmon on demoWIN (Windows 10)
 
 1. Download Sysmon from [Microsoft Sysinternals](https://docs.microsoft.com/en-us/sysinternals/downloads/sysmon)
-2. Download Sysmon config (SwiftOnSecurity recommended):
+2. Open PowerShell as Administrator and run:
 ```powershell
-# Download Sysmon
-Invoke-WebRequest -Uri https://download.sysinternals.com/files/Sysmon.zip -OutFile Sysmon.zip
-Expand-Archive Sysmon.zip
-
 # Install with default config
-cd Sysmon
 .\Sysmon64.exe -accepteula -i
 ```
 
@@ -193,7 +188,7 @@ Expected output: `STATE: 4 RUNNING`
    - Architecture: **x86_64**
    - Wazuh Server IP: `10.0.2.4`
    - Agent Name: `demoWIN`
-3. Copy the generated PowerShell command and run it on demoWIN as Administrator
+3. Copy the generated PowerShell command and run as Administrator on demoWIN
 
 ### Configure Agent to Forward Sysmon Logs
 
@@ -213,7 +208,6 @@ Add this entry before `</ossec_config>`:
 
 ### Restart Wazuh Agent
 ```cmd
-# Open CMD as Administrator
 sc start WazuhSvc
 
 # Verify running
@@ -234,7 +228,7 @@ sudo grep -i "sysmon" /var/ossec/logs/archives/archives.log | tail -20
 ### Run Nmap from Kali Linux (10.0.2.15)
 
 ```bash
-# Basic SYN scan with service detection
+# SYN scan with service detection on top 1000 ports
 nmap -sS -sV -p 1-1000 10.0.2.3
 ```
 
@@ -248,6 +242,10 @@ MAC Address: 08:00:27:44:5F:E6 (Oracle VirtualBox)
 OS: Windows; CPE: cpe:/o:microsoft:windows
 ```
 
+The screenshot below shows the **Nmap attack (left)** and **Wazuh dashboard lighting up in real-time (right)** — demonstrating live SIEM detection during the scan.
+
+![Nmap Attack + Wazuh Dashboard Real-time](screenshots/00-nmap-attack-wazuh-realtime.jpg)
+
 ### Monitor Real-time on Ubuntu
 ```bash
 sudo tail -f /var/ossec/logs/archives/archives.log | grep -i "10.0.2.15"
@@ -257,30 +255,53 @@ sudo tail -f /var/ossec/logs/archives/archives.log | grep -i "10.0.2.15"
 
 ## 📊 Detection & Alert Analysis
 
-### Finding Alerts in Wazuh Dashboard
+### Wazuh Security Events Dashboard
 
-1. Go to `https://10.0.2.4` → **Security Events → Events tab**
-2. Use Lucene search:
+After running the Nmap scan, the Wazuh dashboard showed **1,594 total alerts** from the demoWIN agent, with **26 high-severity (Level 12+)** alerts and multiple MITRE ATT&CK technique mappings including **Account Discovery**.
+
+![Wazuh Security Events Dashboard](screenshots/01-wazuh-dashboard.jpg)
+
+---
+
+### Finding Nmap-Related Alerts
+
+Using Lucene search in the Events tab to filter for Rule 92217:
+
 ```
 agent.name:DESKTOP-F8F343T AND rule.id:92217
 ```
-3. Set time range: **Last 24 hours**
 
-### Alert Details — Rule 92217
+This returned **149 hits** — all triggered during the Nmap scan window.
+
+![Wazuh Events - 149 Hits Rule 92217](screenshots/03-wazuh-events-149hits.jpg)
+
+---
+
+### Alert Deep Dive — Rule 92217
+
+Expanding the alert showed full forensic details captured by Sysmon:
+
+
+![Alert Details - Rule 92217 Part 1](screenshots/02-wazuh-alert-details-1.jpg)
+
+![Alert Details - Rule 92217 Part 2 - MITRE Mapping](screenshots/04-wazuh-alert-details-2.jpg)
+
+#### Key Fields from the Alert:
 
 | Field | Value |
 |-------|-------|
 | **Rule ID** | 92217 |
 | **Rule Description** | Executable dropped in Windows root folder |
 | **Rule Level** | 6 (Medium) |
-| **Fired Times** | 149 hits |
-| **Agent** | DESKTOP-F8F343T (demoWIN) |
+| **Fired Times** | 56 |
+| **Agent Name** | DESKTOP-F8F343T |
 | **Agent IP** | 10.0.2.3 |
 | **Log Source** | Microsoft-Windows-Sysmon/Operational |
 | **Sysmon Event ID** | 11 (File Created) |
-| **Process** | mscorsvw.exe |
-| **Target File** | TaskScheduler.dll |
+| **Process Image** | `C:\Windows\Microsoft.NET\Framework\v4.0.30319\mscorsvw.exe` |
+| **Target Filename** | `C:\Windows\assembly\NativeImages_v4.0.30319_32\Temp\14c0-0\TaskScheduler.dll` |
 | **User** | NT AUTHORITY\SYSTEM |
+| **Rule Groups** | sysmon, sysmon_eid11_detections, windows |
 
 ---
 
@@ -288,37 +309,43 @@ agent.name:DESKTOP-F8F343T AND rule.id:92217
 
 | Field | Value |
 |-------|-------|
-| **Technique ID** | T1570 |
+| **Technique ID** | [T1570](https://attack.mitre.org/techniques/T1570/) |
 | **Tactic** | Lateral Movement |
 | **Technique** | Lateral Tool Transfer |
 
-> 📌 Note: While the primary goal was Nmap port scan detection, Wazuh also captured file creation events (Sysmon Event ID 11) triggered during the scan, mapped to MITRE T1570.
+> 📌 **Note:** Wazuh automatically maps alerts to MITRE ATT&CK techniques. While the primary goal was Nmap port scan detection, Wazuh captured Sysmon **Event ID 11 (File Created)** events that were triggered during the scan — mapped to T1570 (Lateral Tool Transfer).
 
 ---
 
-## 🔑 Key Findings
+## 🔑 Key Findings & Lessons Learned
 
-1. **Sysmon + Wazuh = Powerful Combo** — Sysmon provides detailed Windows telemetry that Wazuh can correlate into actionable alerts.
+**1. Sysmon + Wazuh = Powerful Visibility**
+Sysmon provides deep Windows telemetry (process creation, network connections, file events) that Wazuh correlates into actionable alerts with MITRE ATT&CK context.
 
-2. **Log Archiving must be enabled** — By default, `logall` is set to `no` in Wazuh. Setting it to `yes` is required to capture all events including Sysmon logs.
+**2. Log Archiving Must Be Enabled**
+By default, `logall` is set to `no` in Wazuh. Without setting it to `yes`, Sysmon logs won't be stored in archives and won't appear in the dashboard.
 
-3. **ossec.conf must include Sysmon** — Without the `<localfile>` entry for `Microsoft-Windows-Sysmon/Operational`, no Sysmon events will be forwarded to Wazuh.
+**3. ossec.conf Requires Sysmon Entry**
+The Wazuh agent won't forward Sysmon logs unless the `<localfile>` entry for `Microsoft-Windows-Sysmon/Operational` is explicitly added to `ossec.conf`.
 
-4. **SIEM doesn't know the tool name** — Wazuh detects *behavior* (file drops, network connections, process creation), not the tool itself. The SOC analyst correlates evidence to conclude "this was Nmap."
+**4. SIEM Detects Behavior, Not Tool Names**
+Wazuh doesn't know "this was Nmap" — it detects *patterns* (rapid connections, file drops, process creation). The SOC analyst correlates evidence to conclude the attack type. This is real SOC work.
 
-5. **MITRE ATT&CK mapping** — Wazuh automatically tags alerts with relevant MITRE techniques, making it easier to understand the attack context.
+**5. MITRE ATT&CK Context Speeds Up Investigation**
+Automatic MITRE mapping (T1570 — Lateral Tool Transfer) helps analysts quickly understand the attack stage and prioritize response.
 
 ---
 
 ## 🛠️ Tools Used
 
-| Tool | Purpose |
-|------|---------|
-| VirtualBox | Hypervisor for hosting VMs |
-| Wazuh 4.7.5 | SIEM — log collection, alerting, dashboards |
-| Sysmon | Windows telemetry — process, network, file events |
-| Kali Linux | Attack simulation platform |
-| Nmap | Network port scanner (attack tool) |
+| Tool | Version | Purpose |
+|------|---------|---------|
+| Oracle VirtualBox | Latest | Hypervisor |
+| Wazuh | 4.7.5 | SIEM — alerts, dashboards, correlation |
+| Sysmon | Latest | Windows telemetry |
+| Kali Linux | Latest | Attack simulation |
+| Nmap | 7.95 | Network port scanner |
+| Ubuntu Server | 22.04 LTS | Wazuh server OS |
 
 ---
 
@@ -327,8 +354,9 @@ agent.name:DESKTOP-F8F343T AND rule.id:92217
 - [Wazuh Documentation](https://documentation.wazuh.com)
 - [Microsoft Sysmon](https://docs.microsoft.com/en-us/sysinternals/downloads/sysmon)
 - [MITRE ATT&CK T1570](https://attack.mitre.org/techniques/T1570/)
-- [SwiftOnSecurity Sysmon Config](https://github.com/SwiftOnSecurity/sysmon-config)
+- [Nmap Official Docs](https://nmap.org/docs.html)
 
 ---
 
-*Built by Leo | Cybersecurity Student | Aspiring SOC Analyst*
+*Built by Leo | Cybersecurity Student | Aspiring SOC Analyst*  
+*🎯 Currently pursuing: BTL1 Certification | TryHackMe SOC Level 1*
