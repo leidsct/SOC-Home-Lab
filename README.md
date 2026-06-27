@@ -242,9 +242,9 @@ MAC Address: 08:00:27:44:5F:E6 (Oracle VirtualBox)
 OS: Windows; CPE: cpe:/o:microsoft:windows
 ```
 
-The screenshot below shows the **Nmap attack (left)** and **Wazuh dashboard lighting up in real-time (right)** — demonstrating live SIEM detection during the scan.
+The screenshot below shows the **Nmap attack (left)** and **Wazuh dashboard lighting up in real-time (right)**:
 
-![Nmap Attack + Wazuh Dashboard Real-time](screenshots/00-nmap-attack-wazuh-realtime.jpg)
+![Nmap Attack + Wazuh Dashboard Real-time](07438df7-c55b-41f2-822b-b1e494b1f9b2.jpg)
 
 ### Monitor Real-time on Ubuntu
 ```bash
@@ -257,15 +257,15 @@ sudo tail -f /var/ossec/logs/archives/archives.log | grep -i "10.0.2.15"
 
 ### Wazuh Security Events Dashboard
 
-After running the Nmap scan, the Wazuh dashboard showed **1,594 total alerts** from the demoWIN agent, with **26 high-severity (Level 12+)** alerts and multiple MITRE ATT&CK technique mappings including **Account Discovery**.
+After the Nmap scan, Wazuh showed **1,594 total alerts** with **26 high-severity (Level 12+)** alerts and multiple MITRE ATT&CK mappings including **Account Discovery**.
 
-![Wazuh Security Events Dashboard](screenshots/01-wazuh-dashboard.jpg)
+![Wazuh Security Events Dashboard](7dc65872-d454-4ed3-92e8-d8ef124c1689.jpg)
 
 ---
 
 ### Finding Nmap-Related Alerts
 
-Using Lucene search in the Events tab to filter for Rule 92217:
+Using Lucene search in the Events tab:
 
 ```
 agent.name:DESKTOP-F8F343T AND rule.id:92217
@@ -273,18 +273,15 @@ agent.name:DESKTOP-F8F343T AND rule.id:92217
 
 This returned **149 hits** — all triggered during the Nmap scan window.
 
-![Wazuh Events - 149 Hits Rule 92217](screenshots/03-wazuh-events-149hits.jpg)
+![Wazuh Events - 149 Hits Rule 92217](bd7f8bab-275e-4cf2-a4c8-1d62f2472f73.jpg)
 
 ---
 
 ### Alert Deep Dive — Rule 92217
 
-Expanding the alert showed full forensic details captured by Sysmon:
+Expanding the alert showed full forensic details including MITRE ATT&CK mapping:
 
-
-![Alert Details - Rule 92217 Part 1](screenshots/02-wazuh-alert-details-1.jpg)
-
-![Alert Details - Rule 92217 Part 2 - MITRE Mapping](screenshots/04-wazuh-alert-details-2.jpg)
+![Alert Details - Rule 92217 with MITRE Mapping](bd60219c-7c30-4f41-af82-e4178d1df5b6.jpg)
 
 #### Key Fields from the Alert:
 
@@ -313,7 +310,7 @@ Expanding the alert showed full forensic details captured by Sysmon:
 | **Tactic** | Lateral Movement |
 | **Technique** | Lateral Tool Transfer |
 
-> 📌 **Note:** Wazuh automatically maps alerts to MITRE ATT&CK techniques. While the primary goal was Nmap port scan detection, Wazuh captured Sysmon **Event ID 11 (File Created)** events that were triggered during the scan — mapped to T1570 (Lateral Tool Transfer).
+> 📌 **Note:** Wazuh automatically maps alerts to MITRE ATT&CK techniques. While the primary goal was Nmap port scan detection, Wazuh captured Sysmon **Event ID 11 (File Created)** events triggered during the scan — mapped to T1570 (Lateral Tool Transfer).
 
 ---
 
