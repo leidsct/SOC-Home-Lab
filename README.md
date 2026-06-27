@@ -192,12 +192,21 @@ Expected output: `STATE: 4 RUNNING`
 
 ### Configure Agent to Forward Sysmon Logs
 
-Edit ossec.conf on demoWIN:
+Edit ossec.conf on demoWIN using Notepad as Administrator:
+
+1. Press **Win + S** → type `notepad`
+2. Right-click Notepad → **Run as administrator**
+3. Click **Yes** on UAC prompt
+4. Inside Notepad, click **File → Open**
+5. Sa file path bar sa taas, i-type:
 ```
 C:\Program Files (x86)\ossec-agent\ossec.conf
 ```
+6. Sa bottom right, change filter from `Text Documents (*.txt)` → **All Files (*.*)**
+7. Click **Open**
+8. Scroll down to the very bottom of the file
+9. Add this block **before** `</ossec_config>`:
 
-Add this entry before `</ossec_config>`:
 ```xml
 <!-- Sysmon log collection -->
 <localfile>
@@ -205,6 +214,8 @@ Add this entry before `</ossec_config>`:
   <log_format>eventchannel</log_format>
 </localfile>
 ```
+
+10. Press **CTRL+S** to save
 
 ### Restart Wazuh Agent
 ```cmd
