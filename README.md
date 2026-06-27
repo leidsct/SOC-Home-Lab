@@ -215,11 +215,96 @@ sc query WazuhSvc
 ```
 Expected: `STATE: 4 RUNNING`
 
+![WazuhSvc Start and Running](Screenshot%201st%202026-06-27%20151009.png)
+
 ### Verify Logs are Arriving (on Ubuntu)
 ```bash
 sudo grep -i "sysmon" /var/ossec/logs/archives/archives.log | tail -20
 ```
-✅ If output appears — Sysmon logs are flowing to Wazuh!
+
+**Before fix** — walang output, Sysmon logs not arriving:
+
+![No Sysmon Output Before Fix](Screenshot%202nd2026-06-27%20151150.png)
+
+**Fix 2: Edit Wazuh Manager ossec.conf** — change logall to yes:
+
+![logall yes in ossec.conf](Screenshot%203rd2026-06-27%20151748.png)
+
+**After fix** — Sysmon logs now flowing to Wazuh! ✅
+
+![Sysmon Logs Arriving](Screenshot%204th2026-06-27%20152058.png)
+
+---
+
+## 🔧 Troubleshooting — Enabling Sysmon Log Forwarding
+
+Before alerts appeared in Wazuh, two critical fixes were needed:
+
+### Fix 1: Enable Log Archiving on Wazuh Manager
+
+By default, Wazuh does NOT archive all logs. Without this, Sysmon events won't appear in the dashboard.
+
+SSH into Ubuntu Server and edit the Wazuh manager config:
+```bash
+sudo nano /var/ossec/etc/ossec.conf
+```
+
+Find the `<global>` section — change `no` to `yes`:
+```xml
+<global>
+  <logall>yes</logall>
+  <logall_json>yes</logall_json>
+</global>
+```
+
+Save (`CTRL+X` → `Y` → `Enter`) then restart:
+```bash
+sudo systemctl restart wazuh-manager
+```
+
+---
+
+### Fix 2: Add Sysmon Entry to ossec.conf on demoWIN
+
+The Wazuh Agent on demoWIN was NOT forwarding Sysmon logs by default. Verification:
+```bash
+# Run on Ubuntu — if no output, Sysmon logs not arriving
+sudo grep -i "sysmon" /var/ossec/logs/archives/archives.log | tail -20
+```
+
+**Fix:** On demoWIN, open Notepad as Administrator and edit:
+```
+C:\Program Files (x86)\ossec-agent\ossec.conf
+```
+
+Add this block before `</ossec_config>`:
+```xml
+<!-- Sysmon log collection -->
+<localfile>
+  <location>Microsoft-Windows-Sysmon/Operational</location>
+  <log_format>eventchannel</log_format>
+</localfile>
+```
+
+Save the file, then restart the Wazuh Agent via CMD (Administrator):
+```cmd
+sc stop WazuhSvc
+sc start WazuhSvc
+
+# Verify
+sc query WazuhSvc
+```
+Expected: `STATE: 4 RUNNING`
+
+---
+
+### Verify Fix Worked
+
+Run on Ubuntu again:
+```bash
+sudo grep -i "sysmon" /var/ossec/logs/archives/archives.log | tail -20
+```
+✅ If JSON output appears with `Microsoft-Windows-Sysmon` — logs are now flowing!
 
 ---
 
@@ -242,9 +327,9 @@ MAC Address: 08:00:27:44:5F:E6 (Oracle VirtualBox)
 OS: Windows; CPE: cpe:/o:microsoft:windows
 ```
 
-The screenshot below shows the **Nmap attack (left)** and **Wazuh dashboard lighting up in real-time (right)**:
+The screenshot below shows **Nmap attack on Kali (right)** while **Ubuntu captures Sysmon logs in real-time (left)**:
 
-![Nmap Attack + Wazuh Dashboard Real-time](07438df7-c55b-41f2-822b-b1e494b1f9b2.jpg)
+![Nmap Attack + Ubuntu Sysmon Logs Real-time](Screenshot%205th2026-06-27%20152359.png)
 
 ### Monitor Real-time on Ubuntu
 ```bash
