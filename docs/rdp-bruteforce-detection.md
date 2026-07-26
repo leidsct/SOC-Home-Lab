@@ -14,6 +14,10 @@ Simulate a brute force attack against the Windows target's RDP service and verif
     xfreerdp3 /v:10.0.2.3 /u:desca /p:qwerty123 /cert:ignore
     xfreerdp3 /v:10.0.2.3 /u:desca /p:letmein123 /cert:ignore
 
+![Clean Dashboard Before Attack](VirtualBox_kali%20linux_BRUTE1.png)
+
+![Attack Execution on Kali](VirtualBox_kali%20linux_BRUTE2.png)
+
 ### Detection Results — BEFORE vs AFTER
 
 **Before the attack:**
@@ -23,6 +27,8 @@ Simulate a brute force attack against the Windows target's RDP service and verif
 **After the attack:**
 - Total alerts: 133+
 - Authentication failures: **5**
+
+![Detected Login Failures](VirtualBox_kali%20linux_3.png)
 
 ### Alert Deep-Dive
 
@@ -37,6 +43,12 @@ Wazuh flagged each failed attempt under **Rule ID 60122** ("Logon failure - Unkn
 | Authentication Package | NTLM |
 | Fired Times | 5 |
 | Rule Level | 5 |
+
+![Expanded Alert Detail 1](VirtualBox_kali%20linux_4.png)
+
+![Expanded Alert Detail 2](VirtualBox_kali%20linux_5.png)
+
+![Expanded Alert Detail 3](VirtualBox_kali%20linux_6.png)
 
 ### MITRE ATT&CK Mapping
 
