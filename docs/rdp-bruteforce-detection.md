@@ -3,7 +3,7 @@
 ### Objective
 Simulate a brute force attack against the Windows target's RDP service and verify that Wazuh correctly detects and alerts on repeated failed authentication attempts.
 
-### Attack Setup
+### Attack Setup (NOTE: the before picture is example only)
 - **Attacker:** Kali Linux (10.0.2.15)
 - **Target:** demoWIN / Windows 10 (10.0.2.3), RDP port 3389
 - **Method:** Manual credential testing via `xfreerdp3`, simulating a brute force attempt with a small password list
