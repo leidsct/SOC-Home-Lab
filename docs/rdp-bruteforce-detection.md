@@ -18,7 +18,7 @@ Simulate a brute force attack against the Windows target's RDP service and verif
 
 ![Attack Execution on Kali](VirtualBox_kali%20linux_BRUTE2.png)
 
-### Detection Results — BEFORE vs AFTER
+### Detection Results — 
 
 **Before the attack:**
 - Total alerts: 2
