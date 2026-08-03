@@ -1,75 +1,81 @@
-## 🔓 Attack Simulation #2 — RDP Brute Force Detection
+# RDP Brute Force Attack Detection
 
-### Objective
-Simulate a brute force attack against the Windows target's RDP service and verify that Wazuh correctly detects and alerts on repeated failed authentication attempts.
+## Overview
+This exercise simulates an RDP brute force attack against a Windows 10 target (`demoWIN`) from a Kali Linux attacker machine, and verifies that the Wazuh SIEM correctly detects and alerts on the activity in real time.
 
-### Attack Setup (NOTE: the before picture is example only)
-- **Attacker:** Kali Linux (10.0.2.15)
-- **Target:** demoWIN / Windows 10 (10.0.2.3), RDP port 3389
-- **Method:** Manual credential testing via `xfreerdp3`, simulating a brute force attempt with a small password list
+## Lab Environment
+| Host | Role | IP |
+|---|---|---|
+| Ubuntu Server | Wazuh Manager / Dashboard | 10.0.2.4 |
+| demoWIN (Windows 10) | Attack target | 10.0.2.3 |
+| Kali Linux | Attacker | 10.0.2.15 |
 
-    xfreerdp3 /v:10.0.2.3 /u:desca /p:123456 /cert:ignore
-    xfreerdp3 /v:10.0.2.3 /u:desca /p:password /cert:ignore
-    xfreerdp3 /v:10.0.2.3 /u:desca /p:admin123 /cert:ignore
-    xfreerdp3 /v:10.0.2.3 /u:desca /p:qwerty123 /cert:ignore
-    xfreerdp3 /v:10.0.2.3 /u:desca /p:letmein123 /cert:ignore
+This test was run in one continuous session to keep all timestamps consistent.
 
-![Clean Dashboard Before Attack](VirtualBox_kali%20linux_BRUTE1.png)
+## Step 1 — Baseline (before attack)
+Dashboard checked before running any attack to record a clean starting point:
 
-![Attack Execution on Kali](VirtualBox_kali%20linux_BRUTE2.png)
+- **Total alerts:** 100 (background Windows/Sysmon noise only)
+- **Authentication failure:** 0
+- **Authentication success:** 26
 
-### Detection Results — 
+![Wazuh baseline dashboard](01-wazuh-baseline.png)
 
-**Before the attack:**
-- Total alerts: 2
-- Authentication failures: **0**
+## Step 2 — Launch the attack
+From Kali, ran repeated RDP logon attempts against `demoWIN`:
 
-**After the attack:**
-- Total alerts: 133+
-- Authentication failures: **5**
+```bash
+for pass in $(head -20 /usr/share/wordlists/rockyou.txt); do
+  xfreerdp3 /v:10.0.2.3 /u:Administrator /p:"$pass" /cert:ignore +auth-only 2>&1 | grep -i "authentication\|error"
+done
+```
 
-![Detected Login Failures](VirtualBox_kali%20linux_3.png)
+The terminal showed repeated `ERRCONNECT_ACCOUNT_LOCKED_OUT` and NLA authentication failures as attempts progressed.
 
-### Alert Deep-Dive
+## Step 3 — Detection in Wazuh
+After the attack, the dashboard was refreshed:
 
-Wazuh flagged each failed attempt under **Rule ID 60122** ("Logon failure - Unknown user or bad password"):
+- **Authentication failure:** 11 (up from 0)
+- **Authentication success:** 35
+- **Total alerts:** 157
 
-| Field | Value |
-|-------|-------|
-| Event ID | 4625 (Windows failed logon) |
-| Source IP | 10.0.2.15 (Kali attacker machine) |
-| Target Account | desca |
-| Logon Type | 3 (Network) |
-| Authentication Package | NTLM |
-| Fired Times | 5 |
-| Rule Level | 5 |
+![Wazuh dashboard after attack](02-wazuh-detection-dashboard.png)
 
-![Expanded Alert Detail 1](VirtualBox_kali%20linux_4.png)
+## Step 4 — Alert list (Events tab)
+Switched to the Events tab to see the full list of alerts generated during the attack window (162 hits), including:
 
-![Expanded Alert Detail 2](VirtualBox_kali%20linux_5.png)
+| Rule ID | Level | Description | MITRE Technique |
+|---|---|---|---|
+| 60122 | 5 | Logon failure – Unknown user or bad password | T1078 |
+| 60204 | 10 | Multiple Windows logon failures | T1110 (Brute Force) |
+| 60115 | 9 | User account locked out (multiple login errors) | T1110 / T1531 |
 
-![Expanded Alert Detail 3](VirtualBox_kali%20linux_6.png)
+![Events tab alert list](03-events-tab-alert-list.png)
 
-### MITRE ATT&CK Mapping
+## Step 5 — Verifying the source (Rule 60204 expanded)
+Expanded the Rule 60204 event (Windows Security Event ID 4625) to confirm it genuinely originated from the attack:
 
-| Field | Value |
-|-------|-------|
-| Technique ID | T1078 |
-| Technique | Valid Accounts |
-| Tactic | Defense Evasion, Persistence, Privilege Escalation, Initial Access, Impact |
+- **Source Network Address:** `10.0.2.15` (Kali) — confirms the attack source
+- **Workstation Name:** `kali`
+- **Account For Which Logon Failed:** `Administrator`
+- **Failure Reason:** Unknown user name or bad password
+- **rule.frequency:** 8 (alert fired after 8 failed logons within the correlation window — threshold-based detection, not a single event)
 
-> 📌 **Note:** Wazuh correctly correlated repeated authentication failures from a single source IP (10.0.2.15) against a single target account (desca) within a short time window — a textbook brute force pattern.
+![Event expanded - table view](04-event-expanded-table.png)
+![Event expanded - source IP verified](05-event-source-ip-verified.png)
 
-### Bonus Finding: Windows Account Lockout Policy Triggered
+## Step 6 — MITRE and compliance mapping
+The rule detail also includes MITRE ATT&CK and compliance framework mappings:
 
-After the failed attempts above, Windows automatically triggered its built-in **Account Lockout Policy** on the target account. A follow-up login attempt using the account's valid password was rejected with:
+- **MITRE:** T1110, Tactic: Credential Access, Technique: Brute Force
+- **Compliance mappings:** GDPR IV_32.2 / IV_35.7.d, HIPAA 164.312.b, NIST 800-53 AC.7 / AU.14 / SI.4, PCI DSS 10.2.4 / 10.2.5 / 11.4
 
-    ERRCONNECT_ACCOUNT_LOCKED_OUT [0x00020018]
+![Event compliance mapping](06-event-compliance-mapping.png)
 
-This confirms the account was locked by Windows itself, independent of the SIEM — demonstrating **defense-in-depth**: the target system's native security controls worked alongside Wazuh's detection layer to limit further unauthorized access attempts.
+## Summary
+| Stage | Authentication Failures |
+|---|---|
+| Baseline (before attack) | 0 |
+| After attack | 11 |
 
-### Key Findings
-1. **Source correlation works out of the box** — Wazuh's default Windows Security ruleset was sufficient to flag the failed logons without any custom rule tuning.
-2. **Repeated failures (`firedtimes`) is the key signal** — a single failed login is normal user error; 5 failures from the same external IP in seconds is a clear brute force indicator.
-3. **MITRE mapping speeds up triage** — the T1078 tag immediately tells an analyst this is a credential-based attack, not malware or exploitation.
-4. **Endpoint-level defenses complement SIEM detection** — the account lockout policy added a second layer of protection beyond just alerting.
+End-to-end chain confirmed: attack execution → Windows Security event logging → Wazuh correlation rule triggering → account lockout, mapped to MITRE ATT&CK T1110 (Brute Force).
