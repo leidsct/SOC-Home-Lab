@@ -19,7 +19,7 @@ Dashboard checked before running any attack to record a clean starting point:
 - **Authentication failure:** 0
 - **Authentication success:** 26
 
-![Wazuh baseline dashboard](01-wazuh-baseline.png)
+![Wazuh baseline dashboard](01-wazuh-baseline.png.png)
 
 ## Step 2 — Launch the attack
 From Kali, ran repeated RDP logon attempts against `demoWIN`:
@@ -39,7 +39,7 @@ After the attack, the dashboard was refreshed:
 - **Authentication success:** 35
 - **Total alerts:** 157
 
-![Wazuh dashboard after attack](02-wazuh-detection-dashboard.png)
+![Wazuh dashboard after attack](02-wazuh-detection-dashboard.png.png)
 
 ## Step 4 — Alert list (Events tab)
 Switched to the Events tab to see the full list of alerts generated during the attack window (162 hits), including:
@@ -50,7 +50,7 @@ Switched to the Events tab to see the full list of alerts generated during the a
 | 60204 | 10 | Multiple Windows logon failures | T1110 (Brute Force) |
 | 60115 | 9 | User account locked out (multiple login errors) | T1110 / T1531 |
 
-![Events tab alert list](03-events-tab-alert-list.png)
+![Events tab alert list](03-events-tab-alert-list.png.png)
 
 ## Step 5 — Verifying the source (Rule 60204 expanded)
 Expanded the Rule 60204 event (Windows Security Event ID 4625) to confirm it genuinely originated from the attack:
@@ -61,8 +61,8 @@ Expanded the Rule 60204 event (Windows Security Event ID 4625) to confirm it gen
 - **Failure Reason:** Unknown user name or bad password
 - **rule.frequency:** 8 (alert fired after 8 failed logons within the correlation window — threshold-based detection, not a single event)
 
-![Event expanded - table view](04-event-expanded-table.png)
-![Event expanded - source IP verified](05-event-source-ip-verified.png)
+![Event expanded - table view](04-event-expanded-table.png.png)
+![Event expanded - source IP verified](05-event-source-ip-verified.png.png)
 
 ## Step 6 — MITRE and compliance mapping
 The rule detail also includes MITRE ATT&CK and compliance framework mappings:
@@ -70,7 +70,7 @@ The rule detail also includes MITRE ATT&CK and compliance framework mappings:
 - **MITRE:** T1110, Tactic: Credential Access, Technique: Brute Force
 - **Compliance mappings:** GDPR IV_32.2 / IV_35.7.d, HIPAA 164.312.b, NIST 800-53 AC.7 / AU.14 / SI.4, PCI DSS 10.2.4 / 10.2.5 / 11.4
 
-![Event compliance mapping](06-event-compliance-mapping.png)
+![Event compliance mapping](06-event-compliance-mapping.png.png)
 
 ## Summary
 | Stage | Authentication Failures |
