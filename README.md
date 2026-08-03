@@ -14,6 +14,7 @@ A home Security Operations Center (SOC) lab built using VirtualBox for practicin
 - [Attack Simulation — Nmap Scan](#attack-simulation--nmap-scan)
 - [Detection & Alert Analysis](#detection--alert-analysis)
 - [MITRE ATT&CK Mapping](#mitre-attck-mapping)
+- [RDP Brute Force Detection](#rdp-brute-force-detection)
 - [Key Findings](#key-findings)
 
 ---
@@ -410,6 +411,14 @@ Expanding the alert showed full forensic details including MITRE ATT&CK mapping:
 
 ---
 
+## 🔐 RDP Brute Force Detection
+
+A separate exercise simulating an RDP brute force attack from Kali Linux against the Windows 10 target, verified end-to-end in Wazuh (baseline → attack → correlated detection → account lockout, MITRE T1110).
+
+📄 Full write-up, commands, and screenshots: **[docs/rdp-bruteforce-detection.md](docs/rdp-bruteforce-detection.md)**
+
+---
+
 ## 🔑 Key Findings & Lessons Learned
 
 **1. Sysmon + Wazuh = Powerful Visibility**
@@ -425,7 +434,7 @@ The Wazuh agent won't forward Sysmon logs unless the `<localfile>` entry for `Mi
 Wazuh doesn't know "this was Nmap" — it detects *patterns* (rapid connections, file drops, process creation). The SOC analyst correlates evidence to conclude the attack type. This is real SOC work.
 
 **5. MITRE ATT&CK Context Speeds Up Investigation**
-Automatic MITRE mapping (T1570 — Lateral Tool Transfer) helps analysts quickly understand the attack stage and prioritize response.
+Automatic MITRE mapping (T1570 — Lateral Tool Transfer, T1110 — Brute Force) helps analysts quickly understand the attack stage and prioritize response.
 
 ---
 
@@ -447,6 +456,7 @@ Automatic MITRE mapping (T1570 — Lateral Tool Transfer) helps analysts quickly
 - [Wazuh Documentation](https://documentation.wazuh.com)
 - [Microsoft Sysmon](https://docs.microsoft.com/en-us/sysinternals/downloads/sysmon)
 - [MITRE ATT&CK T1570](https://attack.mitre.org/techniques/T1570/)
+- [MITRE ATT&CK T1110](https://attack.mitre.org/techniques/T1110/)
 - [Nmap Official Docs](https://nmap.org/docs.html)
 
 ---
