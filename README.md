@@ -464,17 +464,4 @@ Automatic MITRE mapping (T1570 — Lateral Tool Transfer, T1110 — Brute Force)
 *Built by Leo | Cybersecurity Student | Aspiring SOC Analyst*  
 *🎯 Currently pursuing: BTL1 Certification | TryHackMe SOC Level 1*
 
-*Built by Leo | Cybersecurity Student | Aspiring SOC Analyst*  
-*🎯 Currently pursuing: BTL1 Certification | TryHackMe SOC Level 1*
 
-*Built by Leo | Cybersecurity Student | Aspiring SOC Analyst*  
-*🎯 Currently pursuing: BTL1 Certification | TryHackMe SOC Level 1*
-
-*Built by Leo | Cybersecurity Student | Aspiring SOC Analyst*  
-*🎯 Currently pursuing: BTL1 Certification | TryHackMe SOC Level 1*
-
-*Built by Leo | Cybersecurity Student | Aspiring SOC Analyst*  
-*🎯 Currently pursuing: BTL1 Certification | TryHackMe SOC Level 1*
-
-*Built by Leo | Cybersecurity Student | Aspiring SOC Analyst*  
-*🎯 Currently pursuing: BTL1 Certification | TryHackMe SOC Level 1*
